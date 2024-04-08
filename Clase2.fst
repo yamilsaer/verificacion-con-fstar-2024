@@ -161,7 +161,7 @@ let modus_tollendo_ponens (#a #b : Type)
 =
   function
   | Inl x -> fun (f: no a) -> f x
-  | Inr y -> fun (f: no a) -> y
+  | Inr y -> fun _ -> y
   (* Vale la recíproca? *)  // No vale sin tercero excluido
 
 let modus_ponendo_tollens (#a #b : Type)
@@ -214,18 +214,23 @@ let elim_triple_neg (#a:Type) : no (no (no a)) -> no a =
 (* Ejercicio. ¿Se puede en lógica intuicionista? *)
 let ley_impl1 (p q : Type) : (p -> q) -> oo (no p) q =
   // En principio no puedo saber si p vale o no
-  admit()
+  fun f ->
+    let q_noq: oo q (no q) = magic () in
+    match q_noq with
+    | Inl y -> Inr y
+    | Inr g -> Inl (fun x -> g (f x))
 
 (* Ejercicio. ¿Se puede en lógica intuicionista? *)
 let ley_impl2 (p q : Type) : oo (no p) q -> (p -> q) =
   function
   | Inl f -> f
-  | Inr a -> fun (x:p) -> a
+  | Inr a -> fun _ -> a
 
 (* Ejercicio. ¿Se puede en lógica intuicionista? *)
 let ley_impl3 (p q : Type) : no (p -> q) -> yy p (no q) =
   // En principio no puedo demostrar p
   admit()
+
 
 (* Ejercicio. ¿Se puede en lógica intuicionista? *)
 let ley_impl4 (p q : Type) : yy p (no q) -> no (p -> q) =
@@ -245,7 +250,11 @@ let lte_implica_edn (lte : tercero_excluido) (#a:Type) : eliminacion_doble_neg =
 
 (* Ejercicio. ¡Difícil! *)
 let edn_implica_lte (edn : eliminacion_doble_neg) (#a:Type) : oo a (no a) =
-  admit()
+  let x1: no (yy (no a) (no (no a))) = no_contradiccion #(no a) in
+  let impl: no (oo a (no a)) -> yy (no a) (no (no a)) = demorgan2_vuelta #a #(no a) in
+  let x2: no (no (oo a (no a))) = modus_tollens impl x1 in
+  edn x2
+
 
 (* Ejercicio: ¿la ley de Peirce es intuicionista o clásica?
 Demuestrelá sin axiomas para demostrar que es intuicionista,
@@ -257,9 +266,10 @@ type peirce = (#a:Type) -> (#b:Type) -> ((a -> b) -> a) -> a
 let lte_implica_peirce (lte : tercero_excluido) (#a:Type) (#b:Type): peirce =
   fun #a #b ->
     match lte a with
-    | Inl x -> fun (f:(a -> b) -> a) -> x
-    | Inr g -> fun (f:(a -> b) -> a) -> f g
+    | Inl x -> fun _ -> x
+    | Inr g -> fun f -> f g
 
 
 let peirce_implica_lte (pp : peirce) : tercero_excluido =
   admit()
+  // necesita magic

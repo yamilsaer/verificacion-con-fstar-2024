@@ -5,6 +5,7 @@ module Clase3.Positividad
 // noeq
 // type ni =
 //   | Mk : f:(ni -> empty) -> ni
+// ni aparece a la izquierda de una flecha
 
 assume val ni : Type
 assume val mk : (ni -> empty) -> ni
