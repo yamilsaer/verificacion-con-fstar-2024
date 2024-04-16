@@ -77,7 +77,9 @@ let rec sum (xs:list int) : int =
   else List.Tot.hd xs + sum (List.Tot.tl xs)
 
 (* Prefijo de una lista *)
-let rec init #a (xs : list a{Cons? xs}) : list a =
+let rec init #a (xs : list a{Cons? xs}) :
+   xs': list a{List.Tot.length xs' == List.Tot.length xs - 1} 
+=
   match xs with
   | [x] -> []
   | x::xs -> x :: init xs
@@ -88,8 +90,7 @@ let rec last #a (xs : list a{Cons? xs}) : a =
   | [x] -> x
   | _::xs -> last xs
 
-[@@expect_failure]
-let rec sum' (xs:list int) : Tot int =
+let rec sum' (xs:list int) : Tot int (decreases List.Tot.length xs) =
   (* Por qué *no* se acepta esta función? Termina? *)
   // Termina pero no se acepta porque no puede deducir que init xs << xs
   if Nil? xs
