@@ -60,14 +60,13 @@ let rec flip2 (x:int) : Tot int (decreases %[abs x; b2nat (x >= 0)])=
   else if x > 0 then flip2 (-x)
   else (* x < 0 *) flip2 (-x - 1)
 
-let rev (#a:Type) (xs : list a) : list a =
-  (* Agregar una claúsula para demostrar la terminación de esta función *)
-  let rec go (acc xs : list a) : Tot (list a) (decreases xs) =
-    match xs with
-    | [] -> acc
-    | x::xs -> go (x::acc) xs
-  in
-  go [] xs
+(* Agregar una claúsula para demostrar la terminación de esta función *)
+let rec rev_aux (#a:Type) (acc xs : list a) : Tot (list a) (decreases xs) =
+  match xs with
+  | [] -> acc
+  | x::xs -> rev_aux (x::acc) xs
+
+let rev (#a:Type) (xs : list a) : list a = rev_aux [] xs
 
 let rec sum (xs:list int) : int =
   (* Por qué se acepta esta función? *)
