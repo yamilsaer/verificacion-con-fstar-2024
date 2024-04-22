@@ -45,7 +45,12 @@ let rec constant_fold (#ty:l_ty) (e : expr ty) : Tot (expr ty) (decreases e) =
   | EEq e1 e2 -> EEq (constant_fold e1) (constant_fold e2)
   | EIf (EBool true) e1 e2 -> constant_fold e1
   | EIf (EBool false) e1 e2 -> constant_fold e2
-  | EIf c e1 e2 -> EIf (constant_fold c) (constant_fold e1) (constant_fold e2)
+  | EIf c e1 e2 -> 
+    let c' = constant_fold c in
+      match c' with
+      | EBool true -> constant_fold e1
+      | EBool false -> constant_fold e2
+      | c2 -> EIf c2 (constant_fold e1) (constant_fold e2)
 
 (* Correctitud de la optimización de constant folding *)
 let rec constant_fold_ok (#ty:l_ty) (e : expr ty)
