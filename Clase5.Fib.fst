@@ -74,9 +74,5 @@ let rec fib_tail_aux (x:nat) (n:nat) : Lemma (ensures fib_tail' (fib x) (fib (x+
     fib_tail_aux (x+1) (n-1)
 
 (* Demuestre que es correcta. Va a necesitar un lema auxiliar para fib_tail'. *)
-let fib_tail_ok (n:nat) : Lemma (fib_tail n == fib n) =
-  match n with
-  | 0 -> ()
-  | n -> 
-    fib_tail_aux 0 n
+let fib_tail_ok (n:nat) : Lemma (fib_tail n == fib n) = fib_tail_aux 0 n
 

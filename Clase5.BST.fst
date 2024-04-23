@@ -55,7 +55,7 @@ let rec insert_size (x:int) (t:bst) : Lemma (ensures size (insert x t) == 1 + si
     insert_size x r
 
 let rec insert_height (x:int) (t:bst)
-: Lemma (ensures height (insert x t) <= 1 + height t)
+: Lemma (ensures height t <= height (insert x t) /\ height (insert x t) <= 1 + height t)
 = match t with
   | L -> ()
   | N (l,_,r) ->
@@ -69,17 +69,13 @@ let rec insert_mem (x:int) (t:bst) : Lemma (member x (insert x t)) =
     insert_mem x l;
     insert_mem x r
 
-// let rec insert_height_aux (x:int) (t1 t2:bst)
-// : Lemma (max (height t1) (height t2) <= max (height (insert x t1)) (height (insert x t2)))
+// let rec insert_height2 (x:int) (t:bst)
+// : Lemma (ensures height t <= height (insert x t))
 // = match t with
-
-let rec insert_height2 (x:int) (t:bst)
-: Lemma (ensures height t <= height (insert x t))
-= match t with
-  | L -> ()
-  | N (l,_,r) ->
-    insert_height2 x l;
-    insert_height2 x r
+//   | L -> ()
+//   | N (l,_,r) ->
+//     insert_height2 x l;
+//     insert_height2 x r
 
 (* ¿Puede demostrar también que:
      height t <= height (insert x t)
@@ -114,7 +110,6 @@ las definiciones de delete, delete_root y extract_min. *)
 let rec extract_min_size (t:bst) : Lemma (ensures (match extract_min t with | None -> size t == 0 | Some (_,t') -> size t' == size t - 1)) =
   match t with
   | L -> ()
-  | N (L, x, r) -> ()
   | N (l, x, r) -> extract_min_size l
 
 let rec delete_size (x:int) (t:bst) : Lemma (delete x t == t \/ size (delete x t) == size t - 1) =

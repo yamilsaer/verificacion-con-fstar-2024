@@ -51,24 +51,21 @@ let rec rev_append_int (xs ys : list int)
     snoc_append (rev_int ys) (rev_int xs') x;
     ()
 
-let rec rev_soc (xs : list int) (x : int)
+let rec rev_snoc (xs : list int) (x : int)
   : Lemma (rev_int (snoc xs x) == x::rev_int xs)
 = match xs with
   | [] -> ()
-  | z::zs -> rev_soc zs x
+  | z::zs -> rev_snoc zs x
 
 let rec rev_rev (xs : list int)
   : Lemma (rev_int (rev_int xs) == xs)
 = match xs with
   | [] -> ()
   | x::xs' ->
-    rev_soc (rev_int xs') x;
+    rev_snoc (rev_int xs') x;
     rev_rev xs'
 
 let rev_injective (xs ys : list int)
   : Lemma (requires rev_int xs == rev_int ys) (ensures xs == ys)
-= match xs with
-  | [] -> ()
-  | x::xs' ->
-    rev_rev xs;
-    rev_rev ys
+= rev_rev xs;
+  rev_rev ys
