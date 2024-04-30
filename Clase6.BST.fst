@@ -10,17 +10,17 @@ type bst0 =
   | L
   | N of bst0 & int & bst0
 
-let rec all_lt (x: int) (t: bst0) : bool =
+let rec all_lt (x: int) (t: bst0) : GTot bool =
   match t with
   | L -> true
   | N (l, y, r) -> all_lt x l && y < x && all_lt x r
 
-let rec all_gt (x: int) (t: bst0) : bool =
+let rec all_gt (x: int) (t: bst0) : GTot bool =
   match t with
   | L -> true
   | N (l, y, r) -> all_gt x l && y > x && all_gt x r
 
-let rec is_bst (t: bst0) : bool =
+let rec is_bst (t: bst0) : GTot bool =
   match t with
   | L -> true
   | N (l, x, r) -> is_bst l && is_bst r && all_lt x l && all_gt x r
@@ -88,21 +88,21 @@ let rec member (x: int) (t: bst) : bool =
     else if x > y then member x r
     else true
 
-let rec in_tree_r (x:int) (t:bst0) (y:int)
-  : Lemma (requires all_gt y t /\ x < y)(ensures not (in_tree x t))
+let rec in_tree_r (x y:int) (t:bst0) 
+  : Lemma (requires all_gt y t /\ x <= y)(ensures not (in_tree x t))
 = match t with
   | L -> ()
   | N (l, _, r) ->
-    in_tree_r x l y;
-    in_tree_r x r y
+    in_tree_r x y l;
+    in_tree_r x y r
 
-let rec in_tree_l (x:int) (t:bst0) (y:int)
-  : Lemma (requires all_lt y t /\ x > y)(ensures not (in_tree x t))
+let rec in_tree_l (x y:int) (t:bst0)
+  : Lemma (requires all_lt y t /\ x >= y)(ensures not (in_tree x t))
 = match t with
   | L -> ()
   | N (l, _, r) ->
-    in_tree_l x l y;
-    in_tree_l x r y
+    in_tree_l x y l;
+    in_tree_l x y r
 
 let rec member_ok (x:int) (t:bst) : Lemma (member x t == in_tree x t) =
   match t with
@@ -110,11 +110,11 @@ let rec member_ok (x:int) (t:bst) : Lemma (member x t == in_tree x t) =
   | N (l, y, r) ->
     if x < y then (
       member_ok x l;
-      in_tree_r x r y
+      in_tree_r x y r
       )
     else if x > y then (
       member_ok x r;
-      in_tree_l x l y
+      in_tree_l x y l
     )
     else ()
 
