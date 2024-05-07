@@ -47,7 +47,7 @@ type runsto : (p:stmt) -> (s0:state) -> (s1:state) -> Type0 =
   | R_IfZ_True :
     #c:expr -> #t:stmt -> #e:stmt ->
     #s:state -> #s':state -> runsto t s s' ->
-    squash (eval_expr s c == 0) ->
+    squash (eval_expr s c = 0) ->
     runsto (IfZ c t e) s s'
 
   | R_IfZ_False :
@@ -77,11 +77,24 @@ type runsto : (p:stmt) -> (s0:state) -> (s1:state) -> Type0 =
 //   #s:state -> #s':state ->
 //   runsto (IfZ c (Seq b (While c b)) Skip) s s' ->
 //   runsto (While c b) s s'
-let r_while (#c:expr) (#b:stmt) (#s #s' : state) (pf : runsto (IfZ c (Seq b (While c b)) Skip) s s')
-  : runsto (While c b) s s'
-= admit()
+let r_while (#c:expr) (#b:stmt) (#s #s'' : state) (pf : runsto (IfZ c (Seq b (While c b)) Skip) s s'')
+  : runsto (While c b) s s''
+= if eval_expr s c = 0 
+  then let R_IfZ_True (R_Seq s1 s2) () = pf in
+    R_While_True s1 () s2
+  else R_While_False ()
+    
 
 type cond = state -> bool
+
+let override_cond (c:cond) (x:var) (e:expr) : cond = 
+  fun st -> c (override st x (eval_expr st e))
+
+let cond_expr_t (c:cond) (e:expr) : cond =
+  fun s -> c s && eval_expr s e = 0
+
+let cond_expr_f (c:cond) (e:expr) : cond =
+  fun s -> c s && eval_expr s e <> 0
 
 noeq
 type hoare : (pre:cond) -> (p:stmt) -> (post:cond) -> Type0 =
@@ -91,12 +104,56 @@ type hoare : (pre:cond) -> (p:stmt) -> (post:cond) -> Type0 =
     #pre:cond -> #mid:cond -> #post:cond ->
     hoare pre p mid -> hoare mid q post ->
     hoare pre (Seq p q) post  // {pre} p {mid} /\ {mid} q {post}    ==>    {pre} p;q {post}
+  | H_Assign : 
+    #x:var -> #e:expr -> 
+    post:cond -> pre:cond{pre == override_cond post x e} ->
+    hoare pre (Assign x e) post
+  | H_IfZ :
+    #c:expr -> #t:stmt -> #e:stmt ->
+    #pre:cond -> #post:cond -> #pre_t:cond{pre_t == cond_expr_t pre c} -> #pre_f:cond{pre_f == cond_expr_f pre c} ->
+    hoare pre_t t post -> hoare pre_f e post ->
+    hoare pre (IfZ c t e) post
+  | H_While :
+    #c:expr -> #b:stmt ->
+    #inv:cond -> #inv_t:cond{inv_t == cond_expr_t inv c} -> #inv_f:cond{inv_f == cond_expr_f inv c} ->
+    hoare inv_t b inv ->
+    hoare inv (While c b) inv_f
 
 let rec hoare_ok (p:stmt) (pre:cond) (post:cond) (pf : hoare pre p post)
                  (s0 s1 : state) (e_pf : runsto p s0 s1)
   : Lemma (requires pre s0)
-          (ensures  post s1)
-= admit()
+          (ensures post s1)
+= match p with
+  | Skip -> ()
+
+  | Assign x e -> ()
+
+  | Seq sq1 sq2 ->
+    let H_Seq #_ #_ #_ #mid #_ h1 h2 = pf in
+    let R_Seq #_ #_ #_ #t #_ r1 r2 = e_pf in
+    hoare_ok sq1 pre mid h1 s0 t r1;
+    hoare_ok sq2 mid post h2 t s1 r2
+
+  | While c b ->
+    if eval_expr s0 c = 0 then (
+      let H_While #_ #_ #inv #inv_t #inv_f h1 = pf in
+      let R_While_True #_ #_ #_ #s' #s'' r1 _ r2 = e_pf in
+      hoare_ok b inv_t inv h1 s0 s' r1;
+      hoare_ok p inv inv_f pf s' s'' r2
+    )
+    else ()
+
+  | IfZ c t e ->
+    if eval_expr s0 c = 0 then (
+      let H_IfZ #_ #_ #_ #_ #_ #pre_t #pre_f h1 h2 = pf in
+      let R_IfZ_True #_ #_ #_ #_ #_ r1 _ = e_pf in
+      hoare_ok t pre_t post h1 s0 s1 r1
+    )
+    else (
+      let H_IfZ #_ #_ #_ #_ #_ #_ #pre_f _ h2 = pf in
+      let R_IfZ_False #_ #_ #_ #_ #_ r1 _ = e_pf in
+      hoare_ok e pre_f post h2 s0 s1 r1
+    )
 
 let st0 : state = fun _ -> 0
 
