@@ -106,18 +106,18 @@ type hoare : (pre:cond) -> (p:stmt) -> (post:cond) -> Type0 =
     hoare pre (Seq p q) post  // {pre} p {mid} /\ {mid} q {post}    ==>    {pre} p;q {post}
   | H_Assign : 
     #x:var -> #e:expr -> 
-    post:cond -> pre:cond{pre == override_cond post x e} ->
-    hoare pre (Assign x e) post
+    #post:cond ->
+    hoare (override_cond post x e) (Assign x e) post
   | H_IfZ :
     #c:expr -> #t:stmt -> #e:stmt ->
-    #pre:cond -> #post:cond -> #pre_t:cond{pre_t == cond_expr_t pre c} -> #pre_f:cond{pre_f == cond_expr_f pre c} ->
-    hoare pre_t t post -> hoare pre_f e post ->
+    #pre:cond -> #post:cond ->
+    hoare (cond_expr_t pre c) t post -> hoare (cond_expr_f pre c) e post ->
     hoare pre (IfZ c t e) post
   | H_While :
     #c:expr -> #b:stmt ->
-    #inv:cond -> #inv_t:cond{inv_t == cond_expr_t inv c} -> #inv_f:cond{inv_f == cond_expr_f inv c} ->
-    hoare inv_t b inv ->
-    hoare inv (While c b) inv_f
+    #inv:cond ->
+    hoare (cond_expr_t inv c) b inv ->
+    hoare inv (While c b) (cond_expr_f inv c)
 
 let rec hoare_ok (p:stmt) (pre:cond) (post:cond) (pf : hoare pre p post)
                  (s0 s1 : state) (e_pf : runsto p s0 s1)
@@ -136,27 +136,27 @@ let rec hoare_ok (p:stmt) (pre:cond) (post:cond) (pf : hoare pre p post)
 
   | While c b ->
     if eval_expr s0 c = 0 then (
-      let H_While #_ #_ #inv #inv_t #inv_f h1 = pf in
+      let H_While #_ #_ #_ h1 = pf in
       let R_While_True #_ #_ #_ #s' #s'' r1 _ r2 = e_pf in
-      hoare_ok b inv_t inv h1 s0 s' r1;
-      hoare_ok p inv inv_f pf s' s'' r2
+      hoare_ok b (cond_expr_t pre c) pre h1 s0 s' r1;
+      hoare_ok p pre (cond_expr_f pre c) pf s' s'' r2
     )
     else ()
 
   | IfZ c t e ->
     if eval_expr s0 c = 0 then (
-      let H_IfZ #_ #_ #_ #_ #_ #pre_t #pre_f h1 h2 = pf in
+      let H_IfZ #_ #_ #_ #_ #_ h1 h2 = pf in
       let R_IfZ_True #_ #_ #_ #_ #_ r1 _ = e_pf in
-      hoare_ok t pre_t post h1 s0 s1 r1
+      hoare_ok t (cond_expr_t pre c) post h1 s0 s1 r1
     )
     else (
-      let H_IfZ #_ #_ #_ #_ #_ #_ #pre_f _ h2 = pf in
+      let H_IfZ #_ #_ #_ #_ #_ _ h2 = pf in
       let R_IfZ_False #_ #_ #_ #_ #_ r1 _ = e_pf in
-      hoare_ok e pre_f post h2 s0 s1 r1
+      hoare_ok e (cond_expr_f pre c) post h2 s0 s1 r1
     )
 
 let st0 : state = fun _ -> 0
 
 let test1 : hoare (fun _ -> true) (Assign "x" (Const 1)) (fun s -> s "x" = 1) =
-  admit()
+  H_Assign
 
