@@ -294,7 +294,7 @@ let swap : stmt =
 let wp_swap : wp = cwp swap
 (* Demuestre que el programa intercambia x e y, demostrando un teorema sobre
 la WP *paramétrico* sobre x e y. *)
-let _ = assert (forall s x0 y0. s "x" = x0 /\ s "y" = y0 ==> wp_swap (fun s -> s "x" = y0 /\ s "y" = x0) s)
+let _ = assert (forall s x0 y0. s "x" = x0 /\ s "y" = y0 <==> wp_swap (fun s -> s "x" = y0 /\ s "y" = x0) s)
 
 (* Opcional: escriba el programa siguiente
      x = x + y;
@@ -307,7 +307,7 @@ let swap2 : stmt =
   Assign "y" (Minus (Var "x") (Var "y")) `Seq`
   Assign "x" (Minus (Var "x") (Var "y"))
 let wp_swap2 : wp = cwp swap2
-let _ = assert (forall s x0 y0. s "x" = x0 /\ s "y" = y0 ==> wp_swap2 (fun s -> s "x" = y0 /\ s "y" = x0) s)
+let _ = assert (forall s x0 y0. s "x" = x0 /\ s "y" = y0 <==> wp_swap2 (fun s -> s "x" = y0 /\ s "y" = x0) s)
 
 (* Mover x a y. *)
 
@@ -317,17 +317,17 @@ let move_x_y : stmt =
        y := y + 1 *)
   Assign "y" (Const 0) `Seq`
   While 
-    (fun s -> s "y" >= 0) // invariante
+    (fun s -> s "x" >= s "y") // invariante
     (Lt (Var "y") (Var "x"))
     (Assign "y" (Plus (Var "y") (Const 1)))
 let wp_move_x_y : wp = cwp move_x_y
 let pre_move = wp_move_x_y (fun s -> s "x" == s "y")
 (* Encuentre la WP para la postcondición x=y. *)
-//let _ = assert (forall s. s "x" >= 0 <==> pre_move s)
+let _ = assert (forall s. s "x" >= 0 <==> pre_move s)
 
-// let move_x_y_ok :
-//   hoare (fun s -> s "x" >= 0) move_x_y (fun s -> s "y" = s "x")
-// = hoare_strengthen_pre  _ _ _ _ () <| cwp_ok move_x_y (fun s -> s "y" = s "x")
+let move_x_y_ok :
+  hoare (fun s -> s "x" >= 0) move_x_y (fun s -> s "y" = s "x")
+= hoare_strengthen_pre  _ _ _ _ () <| cwp_ok move_x_y (fun s -> s "y" = s "x")
 (* Armando una tripleta a partir del lema anterior. Esto puede hacerse para
 cada uno de los programas anteriores. Descomentar, debería andar. *)
 
@@ -343,6 +343,8 @@ let pre_countdown = wp_countdown (fun s -> s "x" == 0)
 
 let _ = assert (forall s. s "x" >= 0 <==> pre_countdown s)
 
+// Podria poner como invariante y la precondicion a True, pero no garantiza que el loop termine
+// ya que la logica de Hoare es parcial.
 
 let rec monotonia (p:stmt) (q1 q2 : cond)
   : Lemma (requires forall s. q1 s ==> q2 s)
