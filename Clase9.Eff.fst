@@ -40,7 +40,7 @@ let test_catch () : ML int =
 
 
 (* Versión pura de gcd *)
-let rec gcd (x y : int) : Tot int (decreases abs y) =
+let rec gcd (x y : int) : Tot nat (decreases abs y) =
   let x = abs x in
   let y = abs y in
     if y = 0 then x
@@ -56,7 +56,7 @@ un refinamiento a cache_elem_t. Puede usar tuplas dependientes, o tuplas normale
 let find_in_cache (x y : int) : ML (option (r:int{r == gcd x y})) =
   let rec aux (xs : list cache_elem_t) : ML (option (r:int{r == gcd x y})) =
     match xs with
-    | (x',y',z)::xs' -> if x = x' && y = y' then Some z else aux xs'
+    | (x',y',z)::xs' -> if (x,y) = (x',y') then Some z else aux xs'
     | [] -> None
   in
   aux !cache (* !cache lee la referencia *)
